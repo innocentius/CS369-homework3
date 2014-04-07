@@ -5,6 +5,16 @@ module SessionsHelper
     user.update_attribute(:remember_token, User.hash(remember_token))
     self.current_user = user
   end
+  def create
+    user = User.find_by_email(params[:email])
+    if user && user.authenticate(params[:password])
+      sign_in user
+      redirect_back_or user
+    else
+      flash.now[:error] = 'Invalid email/password combination'
+      render 'new'
+    end
+  end
   def current_user=(user)
     @current_user = user
   end
@@ -23,5 +33,13 @@ module SessionsHelper
                                   User.hash(User.new_remember_token))
     cookies.delete(:remember_token)
     self.current_user = nil
+  end
+  def redirect_back_or(default)
+    redirect_to(session[:return_to] || default)
+    session.delete(:return_to)
+  end
+
+  def store_location
+    session[:return_to] = request.url if request.get?
   end
 end
